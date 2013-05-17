@@ -1,11 +1,11 @@
-define('ace/mode/gherkin-en', ['require', 'exports', 'module' , 'ace/lib/oop', 'ace/mode/text', 'ace/mode/javascript', 'ace/mode/css', 'ace/tokenizer', 'ace/mode/html_highlight_rules', 'ace/mode/behaviour/html', 'ace/mode/folding/html'], function(require, exports, module) {
+define('ace/mode/gherkin-en', ['require', 'exports', 'module' , 'ace/lib/oop', 'ace/mode/text', 'ace/mode/javascript', 'ace/mode/css', 'ace/tokenizer', 'ace/mode/html_highlight_rules', 'ace/mode/behaviour/html', 'ace/mode/folding/html', 'ace/mode/matching_brace_outdent'], function(require, exports, module) {
 
 
 var oop = require("../lib/oop");
-var TextMode = require("ace/mode/text").Mode;
-var Tokenizer = require("ace/tokenizer").Tokenizer;
-var MatchingBraceOutdent = require("ace/mode/matching_brace_outdent").MatchingBraceOutdent;
-var Range = require("ace/range").Range;
+var TextMode = require("./text").Mode;
+var Tokenizer = require("../tokenizer").Tokenizer;
+var MatchingBraceOutdent = require("./matching_brace_outdent").MatchingBraceOutdent;
+var Range = require("../range").Range;
 var TextHighlightRules = require("ace/mode/text_highlight_rules").TextHighlightRules;
 var GherkinHighlightRules = function()
 {
@@ -45,6 +45,9 @@ var GherkinHighlightRules = function()
     };
 };
 
+
+
+
 oop.inherits(GherkinHighlightRules, TextHighlightRules);
 
 var Mode = function()
@@ -78,4 +81,45 @@ oop.inherits(Mode, TextMode);
 
 exports.Mode = Mode;
 
+});
+
+
+define('ace/mode/matching_brace_outdent', ['require', 'exports', 'module' , 'ace/range'], function(require, exports, module) {
+
+
+var Range = require("../range").Range;
+
+var MatchingBraceOutdent = function() {};
+
+(function() {
+
+    this.checkOutdent = function(line, input) {
+        if (! /^\s+$/.test(line))
+            return false;
+
+        return /^\s*\}/.test(input);
+    };
+
+    this.autoOutdent = function(doc, row) {
+        var line = doc.getLine(row);
+        var match = line.match(/^(\s*\})/);
+
+        if (!match) return 0;
+
+        var column = match[1].length;
+        var openBracePos = doc.findMatchingBracket({row: row, column: column});
+
+        if (!openBracePos || openBracePos.row == row) return 0;
+
+        var indent = this.$getIndent(doc.getLine(openBracePos.row));
+        doc.replace(new Range(row, 0, row, column-1), indent);
+    };
+
+    this.$getIndent = function(line) {
+        return line.match(/^\s*/)[0];
+    };
+
+}).call(MatchingBraceOutdent.prototype);
+
+exports.MatchingBraceOutdent = MatchingBraceOutdent;
 });
